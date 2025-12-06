@@ -14,13 +14,10 @@ jobs:
       pr_title: ${{ steps.parse.outputs.pr_title }}
       pr_description: ${{ steps.parse.outputs.pr_description }}
     steps:
-      - name: Get branch name
-        id: branch
-        run: echo "branch_name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
       - name: Parse branch name
         id: parse
         run: |
-          BRANCH="${{ steps.branch.outputs.branch_name }}"
+          BRANCH="${{ github.event.pull_request.head.ref }}"
 
           # Format: feature/ph-123_cos-ciekawego
           TASK_NUMBER=$(echo "$BRANCH" | sed -E 's#^[^/]+/([^_]+)_.*#\1#')
