@@ -1,0 +1,51 @@
+name: Generate PR Title and Description
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  generate-pr-meta:
+    runs-on: ubuntu-latest
+    outputs:
+      pr_title: ${{ steps.parse.outputs.pr_title }}
+      pr_description: ${{ steps.parse.outputs.pr_description }}
+    steps:
+      - name: Get branch name
+        id: branch
+        run: echo "branch_name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+      - name: Parse branch name
+        id: parse
+        run: |
+          BRANCH="${{ steps.branch.outputs.branch_name }}"
+
+          # Format: feature/ph-123_cos-ciekawego
+          TASK_NUMBER=$(echo "$BRANCH" | sed -E 's#^[^/]+/([^_]+)_.*#\1#')
+          RAW_TITLE=$(echo "$BRANCH" | sed -E 's#^[^/]+/[^_]+_(.*)$#\1#')
+
+          TASK_NUMBER_UPPER=$(echo "$TASK_NUMBER" | tr '[:lower:]' '[:upper:]')
+          TITLE_WORDS=$(echo "$RAW_TITLE" | sed -E 's/-/ /g' | sed -E 's/\b(.)/\U\1/g')
+
+          PR_TITLE="[$TASK_NUMBER_UPPER] $TITLE_WORDS"
+          PR_DESCRIPTION="https://google.com/$TASK_NUMBER"
+
+          echo "pr_title=$PR_TITLE" >> $GITHUB_OUTPUT
+          echo "pr_description=$PR_DESCRIPTION" >> $GITHUB_OUTPUT
+      - name: Update Pull Request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr_number = context.payload.pull_request.number;
+            const title = "${{ steps.parse.outputs.pr_title }}";
+            const body = "${{ steps.parse.outputs.pr_description }}";
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr_number,
+              title: title,
+              body: body
+            });

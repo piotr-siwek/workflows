@@ -1,0 +1,34 @@
+# Systemowe pliki macOS
+.DS_Store
+
+# Logi i raporty błędów
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node.js
+node_modules/
+dist/
+build/
+
+# IDE/edytory
+.idea/
+.vscode/
+*.sublime-workspace
+
+# Pliki środowiskowe
+.env
+.env.local
+.env.*.local
+
+# Testy
+coverage/
+
+# Pliki tymczasowe
+*.tmp
+*.temp
+
+# Inne
+*.bak
+*.swp
