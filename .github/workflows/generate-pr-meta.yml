@@ -18,16 +18,26 @@ jobs:
         id: parse
         run: |
           BRANCH="${{ steps.branch.outputs.branch_name }}"
-          
-          # Wyciągnij numer i opis z feature/123-opis-czegos
-          NUMBER=$(echo "$BRANCH" | sed -E 's#^[^/]+/([0-9]+).*#\1#')
-          RAW_TITLE=$(echo "$BRANCH" | sed -E 's#^[^/]+/[0-9]+-(.*)$#\1#')
-          
-          # Zamiana myślników na spacje + kapitalizacja
-          TITLE=$(echo "$RAW_TITLE" | sed -E 's/-/ /g' | sed -E 's/\b(.)/\U\1/g')
 
-          echo "pr_title=$TITLE" >> $GITHUB_OUTPUT
-          echo "pr_description=Powiązane zadanie: $NUMBER" >> $GITHUB_OUTPUT
+          # Wyciągnij numer zadania z feature/ph-123_cos-ciekawego
+          # Format: feature/[prefix]-[numer]_[nazwa-zadania]
+          TASK_NUMBER=$(echo "$BRANCH" | sed -E 's#^[^/]+/([^_]+)_.*#\1#')
+          RAW_TITLE=$(echo "$BRANCH" | sed -E 's#^[^/]+/[^_]+_(.*)$#\1#')
+
+          # Konwersja numeru zadania na wielkie litery (ph-123 -> PH-123)
+          TASK_NUMBER_UPPER=$(echo "$TASK_NUMBER" | tr '[:lower:]' '[:upper:]')
+
+          # Zamiana myślników na spacje + kapitalizacja pierwszych liter
+          TITLE_WORDS=$(echo "$RAW_TITLE" | sed -E 's/-/ /g' | sed -E 's/\b(.)/\U\1/g')
+
+          # Format tytułu: [PH-123] Cos ciekawego
+          PR_TITLE="[$TASK_NUMBER_UPPER] $TITLE_WORDS"
+
+          # Link do zadania: https://google.com/ph-123
+          PR_DESCRIPTION="https://google.com/$TASK_NUMBER"
+
+          echo "pr_title=$PR_TITLE" >> $GITHUB_OUTPUT
+          echo "pr_description=$PR_DESCRIPTION" >> $GITHUB_OUTPUT
       - name: Update Pull Request
         uses: actions/github-script@v7
         with:
@@ -35,7 +45,7 @@ jobs:
             const pr_number = context.payload.pull_request.number;
             const title = "${{ steps.parse.outputs.pr_title }}";
             const body = "${{ steps.parse.outputs.pr_description }}";
-            
+
             await github.rest.pulls.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
