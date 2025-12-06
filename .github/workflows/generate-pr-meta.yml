@@ -10,27 +10,29 @@ permissions:
 jobs:
   generate-pr-meta:
     runs-on: ubuntu-latest
-    outputs:
-      pr_title: ${{ steps.parse.outputs.pr_title }}
-      pr_description: ${{ steps.parse.outputs.pr_description }}
     steps:
-      - name: Get branch name
-        id: branch
-        run: echo "branch_name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
       - name: Parse branch name
         id: parse
         run: |
-          BRANCH="${{ steps.branch.outputs.branch_name }}"
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+
+          echo "Branch name: $BRANCH"
 
           # Format: feature/ph-123_cos-ciekawego
           TASK_NUMBER=$(echo "$BRANCH" | sed -E 's#^[^/]+/([^_]+)_.*#\1#')
           RAW_TITLE=$(echo "$BRANCH" | sed -E 's#^[^/]+/[^_]+_(.*)$#\1#')
+
+          echo "Task number: $TASK_NUMBER"
+          echo "Raw title: $RAW_TITLE"
 
           TASK_NUMBER_UPPER=$(echo "$TASK_NUMBER" | tr '[:lower:]' '[:upper:]')
           TITLE_WORDS=$(echo "$RAW_TITLE" | sed -E 's/-/ /g' | sed -E 's/\b(.)/\U\1/g')
 
           PR_TITLE="[$TASK_NUMBER_UPPER] $TITLE_WORDS"
           PR_DESCRIPTION="https://google.com/$TASK_NUMBER"
+
+          echo "Generated PR title: $PR_TITLE"
+          echo "Generated PR description: $PR_DESCRIPTION"
 
           echo "pr_title=$PR_TITLE" >> $GITHUB_OUTPUT
           echo "pr_description=$PR_DESCRIPTION" >> $GITHUB_OUTPUT
@@ -42,6 +44,10 @@ jobs:
             const title = "${{ steps.parse.outputs.pr_title }}";
             const body = "${{ steps.parse.outputs.pr_description }}";
 
+            console.log('PR number:', pr_number);
+            console.log('New title:', title);
+            console.log('New description:', body);
+
             await github.rest.pulls.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -49,3 +55,5 @@ jobs:
               title: title,
               body: body
             });
+
+            console.log('PR updated successfully');
