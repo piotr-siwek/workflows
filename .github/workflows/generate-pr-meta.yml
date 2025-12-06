@@ -4,6 +4,9 @@ on:
   pull_request:
     types: [opened, edited, synchronize]
 
+permissions:
+  pull-requests: write
+
 jobs:
   generate-pr-meta:
     runs-on: ubuntu-latest
@@ -19,21 +22,14 @@ jobs:
         run: |
           BRANCH="${{ steps.branch.outputs.branch_name }}"
 
-          # Wyciągnij numer zadania z feature/ph-123_cos-ciekawego
-          # Format: feature/[prefix]-[numer]_[nazwa-zadania]
+          # Format: feature/ph-123_cos-ciekawego
           TASK_NUMBER=$(echo "$BRANCH" | sed -E 's#^[^/]+/([^_]+)_.*#\1#')
           RAW_TITLE=$(echo "$BRANCH" | sed -E 's#^[^/]+/[^_]+_(.*)$#\1#')
 
-          # Konwersja numeru zadania na wielkie litery (ph-123 -> PH-123)
           TASK_NUMBER_UPPER=$(echo "$TASK_NUMBER" | tr '[:lower:]' '[:upper:]')
-
-          # Zamiana myślników na spacje + kapitalizacja pierwszych liter
           TITLE_WORDS=$(echo "$RAW_TITLE" | sed -E 's/-/ /g' | sed -E 's/\b(.)/\U\1/g')
 
-          # Format tytułu: [PH-123] Cos ciekawego
           PR_TITLE="[$TASK_NUMBER_UPPER] $TITLE_WORDS"
-
-          # Link do zadania: https://google.com/ph-123
           PR_DESCRIPTION="https://google.com/$TASK_NUMBER"
 
           echo "pr_title=$PR_TITLE" >> $GITHUB_OUTPUT
